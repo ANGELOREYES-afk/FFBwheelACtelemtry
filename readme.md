@@ -6,3 +6,8 @@ Things To Do:
 - [ ] Program Moteus controls
 - [ ] Obtain Force Feedback Data
 - [ ] Link Moteus Controls to Gameplay
+
+REQUIRED!
+
+**AS5600**
+download this https://github.com/RobTillaart/AS5600
