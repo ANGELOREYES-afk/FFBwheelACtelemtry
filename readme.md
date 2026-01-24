@@ -1,4 +1,5 @@
-# Mini Steering Wheel Controller
+# Mini Steering Wheel Controller | TAMUHACK 2026
+
 Created With Moteus, vgamepad, vjoy, and Assetto Corsa Telemetry Tools
 
 Things To Do:
