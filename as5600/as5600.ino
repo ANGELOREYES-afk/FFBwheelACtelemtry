@@ -10,7 +10,8 @@ void setup() {
 }
 
 void loop() {
-  double angle = as5600.rawAngle();
-  Serial.println("Angle: " + String(angle));
+  double angle = as5600.readAngle();
+  double conversion = 360.0/4096.0;
+  Serial.println(angle * conversion);
   delay(200);
 }
