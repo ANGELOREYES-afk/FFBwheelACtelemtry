@@ -7,8 +7,10 @@ Things To Do:
 - [ ] Program Moteus controls
 - [x] Obtain Force Feedback Data
 - [ ] Link Moteus Controls to Gameplay
-- [ ] Obtain Force Feedback Data
-- [ ] Link Moteus Controls to Gameplay
+- [ ] Finish Moteus Mount
+- [ ] Finalize Pedal design
+- [x] Obtain magent angle data
+- [ ] Link Magnet Data to Gameplay
 
 REQUIRED!
 
