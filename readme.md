@@ -3,11 +3,11 @@
 Created With Moteus, vgamepad, vjoy, and Assetto Corsa Telemetry Tools
 
 Things To Do:
-- [ ] Calibrate Moteus Motor
-- [ ] Program Moteus controls
+- [x] Calibrate Moteus Motor
+- [x] Program Moteus controls
 - [x] Obtain Force Feedback Data
-- [ ] Link Moteus Controls to Gameplay
-- [ ] Finish Moteus Mount
+- [x] Link Moteus Controls to Gameplay
+- [x] Finish Moteus Mount
 - [ ] Finalize Pedal design
 - [x] Obtain magent angle data
 - [ ] Link Magnet Data to Gameplay
