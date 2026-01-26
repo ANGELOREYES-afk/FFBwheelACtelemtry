@@ -26,19 +26,23 @@ async def main():
     KP_SCALE = 1              # stiffness scaling in position mode 
     KD_SCALE = 1              # damping scaling in position mode 
     STEER_RANGE_ROT = 1.25      # rotations lock-to-lock/2 (example); tune to your wheel
-    ROTATION_SCALE = 4.0        # rotation scale factor; tune to your wheel
+    ROTATION_SCALE = 2.23        # rotation scale factor; tune to your wheel
+    ZERO_OUT_ROTATION = 4.0
 
 
     try:
         st0 = await c.query()
         zero_pos = float(st0.values[moteus.Register.POSITION])
+        gamepad.right_trigger(255)
         while True:
             # 1) Read moteus state WITHOUT stopping the motor
             st = await c.query()  
             raw_pos = float(st.values[moteus.Register.POSITION])
             raw_vel = float(st.values[moteus.Register.VELOCITY])
-            motor_pos_rot = (raw_pos - zero_pos - ROTATION_SCALE) * ROTATION_SCALE  # rotations output shaft 
+            motor_pos_rot = (raw_pos - zero_pos - ZERO_OUT_ROTATION) * ROTATION_SCALE  # rotations output shaft 
             motor_vel_hz  = raw_vel   # Hz output shaft 
+
+            # add pedal read values in here...
             print("Motor pos: " + str(motor_pos_rot) + " Motor Vel: " + str(motor_vel_hz))
 
             # 2) Build FFB torque from AC + motor state
@@ -67,10 +71,10 @@ async def main():
             steer = clamp(motor_pos_rot / STEER_RANGE_ROT, -1.0, 1.0)
             gamepad.left_joystick_float(x_value_float=steer, y_value_float=0.0)
 
-            gas = clamp(float(phys.gas), 0.0, 1.0)      
-            brake = clamp(float(phys.brake), 0.0, 1.0)  
-            gamepad.right_trigger_float(value_float=gas)  
-            gamepad.left_trigger_float(value_float=brake)
+            #gas = clamp(float(phys.gas), 0.0, 1.0)      
+            #brake = clamp(float(phys.brake), 0.0, 1.0)  
+            #gamepad.right_trigger_float(value_float=gas)  
+            #gamepad.left_trigger_float(value_float=brake)
 
 
             gamepad.update()  
