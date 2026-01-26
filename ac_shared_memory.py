@@ -68,7 +68,7 @@ def ffb_proxy_torque(phys, wheel_angle_rad, wheel_vel_rad_s):
     torque_nm = max(min(torque_nm, 3.0), -3.0)
     return torque_nm
 
-
+"""
 mm, phys = open_ac_physics()
 
 last_packet = -1
@@ -79,3 +79,4 @@ while True:
         ws = list(phys.wheelSlip)   # FL, FR, RL, RR 
         print("steerAngle:", phys.steerAngle, "speedKmh:", phys.speedKmh, "wheelLoad:", wl, "wheelSlip:", ws)
     time.sleep(0.002)  # ~500 Hz loop
+"""
