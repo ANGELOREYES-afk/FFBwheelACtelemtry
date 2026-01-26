@@ -1,7 +1,6 @@
 import ctypes
 import mmap
 import time
-import math
 
 class SPageFilePhysics(ctypes.Structure):
     _pack_ = 4
@@ -79,5 +78,4 @@ while True:
         wl = list(phys.wheelLoad)   # FL, FR, RL, RR
         ws = list(phys.wheelSlip)   # FL, FR, RL, RR 
         print("steerAngle:", phys.steerAngle, "speedKmh:", phys.speedKmh, "wheelLoad:", wl, "wheelSlip:", ws)
-        # --Put moteus commands here--
     time.sleep(0.002)  # ~500 Hz loop
