@@ -125,6 +125,43 @@ def ffb_road_rumble(phys):
     t = time.perf_counter()
     return (RUMBLE_NM * intensity) * math.sin(2.0 * math.pi * RUMBLE_HZ * t)
 
+_slide = 0.0  # 0..1 envelope
+
+def ffb_spinout_effect(phys, wheel_vel_rad_s):
+    global _slide
+
+    # Front slip proxy (FL, FR)
+    slip_fl = abs(float(phys.wheelSlip[0]))
+    slip_fr = abs(float(phys.wheelSlip[1]))
+    front_slip = max(slip_fl, slip_fr)
+
+    # Only when moving
+    moving = 1.0 if float(phys.speedKmh) > 20.0 else 0.0
+
+    # Map slip to 0..1 (tune these)
+    SLIP_ON = 0.20
+    SLIP_FULL = 0.80
+    target = 0.0
+    if moving > 0.0 and front_slip > SLIP_ON:
+        target = max(0.0, min((front_slip - SLIP_ON) / (SLIP_FULL - SLIP_ON), 1.0))
+
+    # Envelope follower (fast attack, slower release)
+    a = 0.25
+    r = 0.05
+    if target > _slide:
+        _slide = (1.0 - a) * _slide + a * target
+    else:
+        _slide = (1.0 - r) * _slide + r * target
+
+    # Effects: extra damping + scrub vibe
+    extra_damping = -0.8 * _slide * wheel_vel_rad_s   # Nm, tune
+    SCRUB_HZ = 18.0
+    SCRUB_NM = 1.0
+    t = time.perf_counter()
+    scrub = (SCRUB_NM * _slide) * math.sin(2.0 * math.pi * SCRUB_HZ * t)
+
+    return extra_damping + scrub, _slide
+
 
 """
 mm, phys = open_ac_physics()
