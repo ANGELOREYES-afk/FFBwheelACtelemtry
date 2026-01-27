@@ -11,7 +11,7 @@ def clamp(x, lo, hi):
     
     :param x: x value
     :param lo: lower bound
-    :param hi: high bound
+    :param hi: higher bound
     """
     return lo if x < lo else hi if x > hi else x
 
@@ -21,19 +21,19 @@ async def main():
 
     mm, phys = ac.open_ac_physics()  # AC shared memory 
 
-    # Tune these in moteus config itself, -> moteus_gui.tview
+    # Tune KP and KD in moteus config itself, -> moteus_gui.tview
     MAX_TORQUE = 2.0            # start low for safety 
     KP_SCALE = 1              # stiffness scaling in position mode 
     KD_SCALE = 1              # damping scaling in position mode 
     STEER_RANGE_ROT = 1.25      # rotations lock-to-lock/2 (example); tune to your wheel
     ROTATION_SCALE = 2.23        # rotation scale factor; tune to your wheel
-    ZERO_OUT_ROTATION = 4.0
+    ZERO_OUT_ROTATION = 4.0  # rotation offset tune to your wheel
 
 
     try:
         st0 = await c.query()
         zero_pos = float(st0.values[moteus.Register.POSITION])
-        gamepad.right_trigger(255)
+        gamepad.right_trigger(255) # test going forward
         while True:
             # 1) Read moteus state WITHOUT stopping the motor
             st = await c.query()  
@@ -46,13 +46,20 @@ async def main():
             print("Motor pos: " + str(motor_pos_rot) + " Motor Vel: " + str(motor_vel_hz))
 
             # 2) Build FFB torque from AC + motor state
-            # Your ffb_proxy_torque expects radians; convert rotations -> radians.
+            # ffb_proxy_torque expects radians; convert rotations -> radians.
             motor_pos_rad = motor_pos_rot * 2.0 * math.pi
             motor_vel_rad_s = motor_vel_hz * 2.0 * math.pi
+        
             
+            motor_rumble = ac.ffb_offroad_rumble(phys) + ac.ffb_road_rumble(phys)
+            #motor_rumble *= clamp(phys.speedKmh / 50.0 , 0.0, 1.0)
 
-            torque_nm = ac.ffb_proxy_torque(phys, motor_pos_rad, motor_vel_rad_s)  
+            torque_nm = ac.ffb_proxy_torque(phys, motor_pos_rad, motor_vel_rad_s)
+
+            torque_nm += motor_rumble
             torque_nm = clamp(torque_nm, -MAX_TORQUE, MAX_TORQUE)
+
+            #print("Torque: " + str(torque_nm))
 
             # 3) Apply torque to the motor (FFB) while holding position target
             # NaN target position means “use current target / current position” in position mode. 
