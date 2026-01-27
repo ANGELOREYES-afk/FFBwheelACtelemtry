@@ -22,12 +22,12 @@ async def main():
     mm, phys = ac.open_ac_physics()  # AC shared memory 
 
     # Tune KP and KD in moteus config itself, -> moteus_gui.tview
-    MAX_TORQUE = 2.0            # start low for safety 
+    MAX_TORQUE = 1.5            # start low for safety 
     KP_SCALE = 1              # stiffness scaling in position mode 
     KD_SCALE = 1              # damping scaling in position mode 
     STEER_RANGE_ROT = 1.25      # rotations lock-to-lock/2 (example); tune to your wheel
-    ROTATION_SCALE = 2.23        # rotation scale factor; tune to your wheel
-    ZERO_OUT_ROTATION = 4.0  # rotation offset tune to your wheel
+    ROTATION_SCALE = 2.23       # rotation scale factor; tune to your wheel
+    ZERO_OUT_ROTATION = 3.0  # rotation offset tune to your wheel
 
 
     try:
@@ -35,34 +35,41 @@ async def main():
         zero_pos = float(st0.values[moteus.Register.POSITION])
         gamepad.right_trigger(255) # test going forward
         while True:
-            # 1) Read moteus state WITHOUT stopping the motor
-            st = await c.query()  
+            # 1) Read moteus state
+            st = await c.query()
             raw_pos = float(st.values[moteus.Register.POSITION])
             raw_vel = float(st.values[moteus.Register.VELOCITY])
-            motor_pos_rot = (raw_pos - zero_pos - ZERO_OUT_ROTATION) * ROTATION_SCALE  # rotations output shaft 
-            motor_vel_hz  = raw_vel   # Hz output shaft 
 
-            # add pedal read values in here...
-            print("Motor pos: " + str(motor_pos_rot) + " Motor Vel: " + str(motor_vel_hz))
+            motor_pos_rot = (raw_pos - zero_pos - ZERO_OUT_ROTATION) * ROTATION_SCALE
+            motor_vel_hz  = raw_vel
+            print("pos " + str(motor_pos_rot))
 
-            # 2) Build FFB torque from AC + motor state
-            # ffb_proxy_torque expects radians; convert rotations -> radians.
-            motor_pos_rad = motor_pos_rot * 2.0 * math.pi
-            motor_vel_rad_s = motor_vel_hz * 2.0 * math.pi
-        
-            
-            motor_rumble = ac.ffb_offroad_rumble(phys) + ac.ffb_road_rumble(phys)
-            #motor_rumble *= clamp(phys.speedKmh / 50.0 , 0.0, 1.0)
+            motor_pos_rad   = motor_pos_rot * 2.0 * math.pi
+            motor_vel_rad_s = motor_vel_hz  * 2.0 * math.pi
 
-            torque_nm = ac.ffb_proxy_torque(phys, motor_pos_rad, motor_vel_rad_s)
+            # 2) Compute FFB components (each function does ONE job)
+            base_align_nm = ac.ffb_proxy_torque(phys, motor_pos_rad, motor_vel_rad_s)  # "normal driving" feel [file:1]
+            kerb_slip_nm  = ac.ffb_offroad_rumble(phys)                                # kerb/slip bursts [file:1]
 
-            torque_nm += motor_rumble
+            # Optional add-ons (only if you implement them in ac_shared_memory.py)
+            road_nm = 0.0
+            if hasattr(ac, "ffb_road_rumble"):
+                road_nm = ac.ffb_road_rumble(phys)
+
+            spin_nm = 0.0
+            slide = 0.0
+            if hasattr(ac, "ffb_spinout_effect"):
+                spin_nm, slide = ac.ffb_spinout_effect(phys, motor_vel_rad_s)
+
+            # 3) Mix (one place to reason about “what you feel”)
+            # Go light during slide (reduce aligning torque)
+            ALIGN_LIGHTEN = 0.7  # 0=no change, 1=remove base align completely
+            base_align_nm *= (1.0 - ALIGN_LIGHTEN * slide)
+
+            torque_nm = base_align_nm + kerb_slip_nm + road_nm + spin_nm
             torque_nm = clamp(torque_nm, -MAX_TORQUE, MAX_TORQUE)
 
-            #print("Torque: " + str(torque_nm))
-
-            # 3) Apply torque to the motor (FFB) while holding position target
-            # NaN target position means “use current target / current position” in position mode. 
+            # 4) Command motor
             await c.set_position(
                 position=math.nan,
                 velocity=math.nan,
@@ -72,21 +79,14 @@ async def main():
                 maximum_torque=MAX_TORQUE,
                 watchdog_timeout=0.1,
                 query=False,
-            ) 
+            )
 
-            # 4) Send controls to the game (steering + pedals)
+            # 5) Send steering to game
             steer = clamp(motor_pos_rot / STEER_RANGE_ROT, -1.0, 1.0)
             gamepad.left_joystick_float(x_value_float=steer, y_value_float=0.0)
+            gamepad.update()
 
-            #gas = clamp(float(phys.gas), 0.0, 1.0)      
-            #brake = clamp(float(phys.brake), 0.0, 1.0)  
-            #gamepad.right_trigger_float(value_float=gas)  
-            #gamepad.left_trigger_float(value_float=brake)
-
-
-            gamepad.update()  
-
-            await asyncio.sleep(0.004)  # ~250 Hz
+            await asyncio.sleep(0.004)
     finally:
         mm.close() 
 
