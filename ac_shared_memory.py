@@ -139,7 +139,7 @@ def ffb_spinout_effect(phys, wheel_vel_rad_s):
     moving = 1.0 if float(phys.speedKmh) > 20.0 else 0.0
 
     # Map slip to 0..1 (tune these)
-    SLIP_ON = 0.20
+    SLIP_ON = 0.5
     SLIP_FULL = 0.80
     target = 0.0
     if moving > 0.0 and front_slip > SLIP_ON:
