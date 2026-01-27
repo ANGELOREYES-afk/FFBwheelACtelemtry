@@ -1,5 +1,6 @@
 import ctypes
 import mmap
+import math
 import time
 
 class SPageFilePhysics(ctypes.Structure):
@@ -41,6 +42,8 @@ class SPageFilePhysics(ctypes.Structure):
         ("turboBoost", ctypes.c_float),
         ("ballast", ctypes.c_float),
         ("airDensity", ctypes.c_float),
+        ("kerbVibration", ctypes.c_float),
+        ("slipVibration", ctypes.c_float),
     ]  # This matches the documented AC struct layout.
 
 def open_ac_physics():
@@ -67,6 +70,61 @@ def ffb_proxy_torque(phys, wheel_angle_rad, wheel_vel_rad_s):
     torque_nm = 2.0 * sat + damping + sync
     torque_nm = max(min(torque_nm, 3.0), -3.0)
     return torque_nm
+
+_rumble_on = False
+
+def ffb_offroad_rumble(phys):
+    global _rumble_on
+
+    RUMBLE_NM = 0.5
+    RUMBLE_HZ = 35.0
+
+    kerb = abs(float(phys.kerbVibration))
+    slip = abs(float(phys.slipVibration))
+    intensity = max(kerb, slip)          # 0..~1 (ish), depends on AC
+    intensity = max(0.0, min(intensity, 1.0))
+
+    ON_TH  = 0.04
+    OFF_TH = 0.02
+
+    if not _rumble_on and intensity > ON_TH:
+        _rumble_on = True
+    elif _rumble_on and intensity < OFF_TH:
+        _rumble_on = False
+
+    if not _rumble_on:
+        return 0.0
+
+    t = time.perf_counter()
+    return (RUMBLE_NM * intensity) * math.sin(2.0 * math.pi * RUMBLE_HZ * t)
+
+_road_lp = 0.0
+
+def ffb_road_rumble(phys):
+    global _road_lp
+
+    # 1) speed-based baseline (0..1)
+    speed = float(phys.speedKmh)
+    speed_gain = max(0.0, min(speed / 80.0, 1.0))  # starts building by ~80 kph
+
+    # 2) "roughness" proxy from acceleration magnitude (in g)
+    ax, ay, az = map(float, phys.accG)
+    gmag = (ax*ax + ay*ay + az*az) ** 0.5
+
+    # high-pass-ish by subtracting a slow low-pass
+    _road_lp = 0.995 * _road_lp + 0.005 * gmag
+    rough = max(0.0, min(gmag - _road_lp, 1.0))
+
+    # 3) vibration signal (pick a road-ish frequency band)
+    RUMBLE_HZ = 38.0  # common "road vibration" feel is ~30-45 Hz
+    RUMBLE_NM = 0.35  # start small, increase carefully
+
+    intensity = speed_gain * (0.2 + 2.5 * rough)  # baseline + roughness
+    intensity = max(0.0, min(intensity, 1.0))
+
+    t = time.perf_counter()
+    return (RUMBLE_NM * intensity) * math.sin(2.0 * math.pi * RUMBLE_HZ * t)
+
 
 """
 mm, phys = open_ac_physics()
