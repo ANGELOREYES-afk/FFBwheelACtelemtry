@@ -22,7 +22,7 @@ https://github.com/RobTillaart/AS5600
 **VGAMEPAD**\
 https://github.com/yannbouteiller/vgamepad
 
-**ViGEmBus** *only if not installed with vgamepad*
+**ViGEmBus** *only if not installed with vgamepad*\
 https://github.com/nefarius/ViGEmBus
 
 **MOTEUS**\
