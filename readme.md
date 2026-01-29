@@ -12,7 +12,7 @@ Mini steering wheel controller with haptic feedback capabilities, with controlle
 - [x] Finish Moteus Mount
 - [x] Finalize Pedal design
 - [x] Obtain magent angle data
-- [ ] Link Magnet Data to Gameplay
+- [x] Link Magnet Data to Gameplay
 ## Installation
 REQUIRED DEPENDENCIES!
 
@@ -32,6 +32,8 @@ After downloading dependencies, run `motor.py` while Assetto Corsa or other raci
 **MAKE SURE MOTEUS MOTOR IS CALIBRATED BEFORE USE**
 
 From there, the wheel should be good to go. Feel free to alter any torque/rotation values within `motor.py` and `ac_shared_memory.py`
+
+Run `stopMoteus.py` to reset the moteus motor
 
 
 ## Usage
