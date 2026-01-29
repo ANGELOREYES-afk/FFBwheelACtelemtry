@@ -82,14 +82,18 @@ async def main():
             )
 
             # 5) Find Pedal Angle
-            gas_pedal_angle = pedal.read_pedal_degrees() # using default parameters
-            brake_pedal_angle = pedal.read_pedal_degrees() # should be different from above
+            gas_pedal_angle, brake_pedal_angle = pedal.read_pedal_degrees() # using default parameters
+    
             if gas_pedal_angle is not None:
                 # convert degree to trigger float
-                gas_trigger_float = gas_pedal_angle
+                gas_diff = 42.4 - 33.4 # adjust per setup
+                gas_trigger_float = (gas_pedal_angle - 33.4) / gas_diff
+                gas_trigger_float = clamp(gas_trigger_float, 0.0, 1.0)
                 gamepad.right_trigger_float(gas_trigger_float)
             if brake_pedal_angle is not None:
-                brake_trigger_float = brake_pedal_angle
+                brake_diff = 186.33 - 168.33 # adjust
+                brake_trigger_float = (brake_pedal_angle - 168.33) / brake_diff
+                brake_trigger_float = clamp(brake_trigger_float, 0.0, 1.0)
                 gamepad.left_trigger_float(brake_trigger_float)
 
             # 6) Send steering to game
