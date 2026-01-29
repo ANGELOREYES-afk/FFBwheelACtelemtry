@@ -31,12 +31,11 @@ void loop() {
   // Convert 4096 to 0-350
   float angle2 = as5600.readAngle() * (360.0 / 4096.0);
 
-  Serial.print("Sensor 1 (Analog): ");
+  
   Serial.print(angle1, 1);
   
-  Serial.print("\t | \t"); // Spacer
+  Serial.print(","); // Spacer
   
-  Serial.print("Sensor 2 (I2C): ");
   Serial.println(angle2, 2); // 2 decimal places
 
   delay(100);
