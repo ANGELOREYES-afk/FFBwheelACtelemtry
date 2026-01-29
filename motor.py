@@ -4,6 +4,7 @@ import math
 import moteus
 import vgamepad as vg
 import ac_shared_memory as ac
+import pedal
 
 def clamp(x, lo, hi):
     """
@@ -33,7 +34,7 @@ async def main():
     try:
         st0 = await c.query()
         zero_pos = float(st0.values[moteus.Register.POSITION])
-        gamepad.right_trigger(255) # test going forward
+        #gamepad.right_trigger(255) # test going forward
         while True:
             # 1) Read moteus state
             st = await c.query()
@@ -51,7 +52,6 @@ async def main():
             base_align_nm = ac.ffb_proxy_torque(phys, motor_pos_rad, motor_vel_rad_s)  # "normal driving" feel [file:1]
             kerb_slip_nm  = ac.ffb_offroad_rumble(phys)                                # kerb/slip bursts [file:1]
 
-            # Optional add-ons (only if you implement them in ac_shared_memory.py)
             road_nm = 0.0
             if hasattr(ac, "ffb_road_rumble"):
                 road_nm = ac.ffb_road_rumble(phys)
@@ -81,7 +81,18 @@ async def main():
                 query=False,
             )
 
-            # 5) Send steering to game
+            # 5) Find Pedal Angle
+            gas_pedal_angle = pedal.read_pedal_degrees() # using default parameters
+            brake_pedal_angle = pedal.read_pedal_degrees() # should be different from above
+            if gas_pedal_angle is not None:
+                # convert degree to trigger float
+                gas_trigger_float = gas_pedal_angle
+                gamepad.right_trigger_float(gas_trigger_float)
+            if brake_pedal_angle is not None:
+                brake_trigger_float = brake_pedal_angle
+                gamepad.left_trigger_float(brake_trigger_float)
+
+            # 6) Send steering to game
             steer = clamp(motor_pos_rot / STEER_RANGE_ROT, -1.0, 1.0)
             gamepad.left_joystick_float(x_value_float=steer, y_value_float=0.0)
             gamepad.update()
